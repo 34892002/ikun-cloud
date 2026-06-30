@@ -102,6 +102,7 @@ clone_repo() {
     cd "$WORK_DIR"
     git pull --ff-only 2>/dev/null && ok "源码已更新" || {
       warn "更新失败，重新克隆..."
+      cd /tmp
       rm -rf "$WORK_DIR"
       git clone --depth 1 -b "$REPO_BRANCH" "$CLONE_URL" "$WORK_DIR" 2>&1 || fail "git clone 失败，请检查网络或代理"
       ok "源码已克隆"
@@ -168,7 +169,9 @@ start_service() {
   fi
 
   # 确保 bun 在 PATH
-  command -v bun &>/dev/null || [[ -x /root/.bun/bin/bun ]] && export PATH="/root/.bun/bin:$PATH"
+  if ! command -v bun &>/dev/null && [[ -x /root/.bun/bin/bun ]]; then
+    export PATH="/root/.bun/bin:$PATH"
+  fi
 
   # 杀掉旧进程
   if pgrep -f "bun.*run.*start" >/dev/null 2>&1; then
@@ -199,26 +202,16 @@ show_menu() {
   echo ""
   echo "  当前状态:"
 
-  if check_pvm; then
-    echo -e "    PVM 内核         ${GREEN}✓${NC}"
-  else
-    echo -e "    PVM 内核         ${RED}✗${NC}"
-  fi
-  if check_ch; then
-    echo -e "    Cloud Hypervisor  ${GREEN}✓${NC}"
-  else
-    echo -e "    Cloud Hypervisor  ${RED}✗${NC}"
-  fi
-  if check_swap; then
-    echo -e "    Swap             ${GREEN}✓${NC} $(swapon --show --noheadings | grep swapfile | awk '{print $3}')"
-  else
-    echo -e "    Swap             ${RED}✗${NC}"
-  fi
-  if check_kvm; then
-    echo -e "    KVM              ${GREEN}✓${NC}"
-  else
-    echo -e "    KVM              ${RED}✗${NC}"
-  fi
+  local PVM_STATUS="[未安装]" CH_STATUS="[未安装]" SWAP_STATUS="[未启用]" KVM_STATUS="[不可用]"
+  check_pvm  && PVM_STATUS="[已安装]"
+  check_ch   && CH_STATUS="[已安装]"
+  check_swap && SWAP_STATUS="[已启用]"
+  check_kvm  && KVM_STATUS="[可用]"
+
+  echo "    PVM 内核         $PVM_STATUS"
+  echo "    Cloud Hypervisor  $CH_STATUS"
+  echo "    Swap             $SWAP_STATUS"
+  echo "    KVM              $KVM_STATUS"
   echo ""
   echo "  [1] 安装 PVM 内核"
   echo "  [2] 安装 ikun-cloud"
@@ -248,7 +241,9 @@ do_install_pvm() {
     warn "PVM 内核已安装，需要重启生效"
     read -p "  现在重启吗？[y/N] " -n 1 -r
     echo ""
-    [[ $REPLY =~ ^[Yy]$ ]] && reboot
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      reboot
+    fi
   fi
 }
 
