@@ -3,13 +3,13 @@
 #  ikun-cloud 一键安装菜单
 #
 #  用法:
-#    bash <(curl -Ls https://raw.githubusercontent.com/USER/ikun-cloud/main/script/menu.sh)
+#    bash <(curl -Ls https://raw.githubusercontent.com/34892002/ikun-cloud/main/script/menu.sh)
 #
 #============================================================
 set -euo pipefail
 
 # ---- 配置 ----
-REPO_URL="https://github.com/USER/ikun-cloud.git"          # TODO: 替换为实际仓库地址
+REPO_URL="https://github.com/34892002/ikun-cloud.git"
 REPO_BRANCH="main"
 DEFAULT_PROXY="https://ghfast.top/"
 WORK_DIR="/tmp/ikun-cloud-src"
@@ -79,7 +79,20 @@ ask_proxy() {
 clone_repo() {
   ask_proxy
 
-  local CLONE_URL="${GH_PROXY}${REPO_URL}"
+  # 构造克隆地址
+  # 代理: https://ghfast.top/https://github.com/user/repo.git
+  # 直连: https://github.com/user/repo.git
+  local CLONE_URL
+  if [[ -n "$GH_PROXY" ]]; then
+    CLONE_URL="${GH_PROXY}${REPO_URL}"
+  else
+    CLONE_URL="$REPO_URL"
+  fi
+
+  info "克隆地址: $CLONE_URL"
+
+  # 禁止 git 弹出认证提示，直接失败
+  export GIT_TERMINAL_PROMPT=0
 
   if [[ -d "$WORK_DIR/.git" ]]; then
     info "检测到已有源码目录，更新中..."
@@ -87,15 +100,17 @@ clone_repo() {
     git pull --ff-only 2>/dev/null && ok "源码已更新" || {
       warn "更新失败，重新克隆..."
       rm -rf "$WORK_DIR"
-      git clone --depth 1 -b "$REPO_BRANCH" "$CLONE_URL" "$WORK_DIR" || fail "git clone 失败"
+      git clone --depth 1 -b "$REPO_BRANCH" "$CLONE_URL" "$WORK_DIR" 2>&1 || fail "git clone 失败，请检查网络或代理"
       ok "源码已克隆"
     }
   else
     rm -rf "$WORK_DIR"
     info "克隆仓库..."
-    git clone --depth 1 -b "$REPO_BRANCH" "$CLONE_URL" "$WORK_DIR" || fail "git clone 失败"
+    git clone --depth 1 -b "$REPO_BRANCH" "$CLONE_URL" "$WORK_DIR" 2>&1 || fail "git clone 失败，请检查网络或代理"
     ok "源码已克隆到 $WORK_DIR"
   fi
+
+  unset GIT_TERMINAL_PROMPT
 
   # 确保脚本可执行
   chmod +x "$WORK_DIR"/script/*.sh 2>/dev/null || true
