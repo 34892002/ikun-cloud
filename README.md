@@ -1,6 +1,6 @@
 # ikun-cloud
 
-> 基于 Cloud Hypervisor v52.0 的轻量 VPS 管理面板，在普通云服务器上"切小鸡"给朋友使用。
+> 基于 Cloud Hypervisor v52.0 + PVM 内核的轻量 VPS 管理面板，在普通云服务器上“切小鸡”给朋友使用。无需嵌套虚拟化支持，通过 PVM 内核为普通云主机提供 KVM 能力。
 
 ## 技术栈
 
@@ -13,6 +13,8 @@
 | 构建工具 | **Vite** | Vue 官方推荐 |
 | 类型 | **TypeScript** | 全栈类型安全 |
 | 数据库 | **SQLite** | 通过 `bun:sqlite` 原生驱动 + Drizzle ORM |
+| 虚拟化 | **PVM 内核** | 腾讯云 CubeSandbox PVM，为普通云主机提供 KVM 能力 |
+| VMM 引擎 | **Cloud Hypervisor v52.0** | 轻量级虚拟机监控器 |
 | CLI 工具 | **Python** | ikun-ctl，调用 Cloud Hypervisor API |
 | 人机验证 | **Cap** | 自托管 CAPTCHA，基于 PoW + 浏览器检测 |
 | 部署 | **单机 Linux** | Bun 单二进制 + 静态前端文件 |
