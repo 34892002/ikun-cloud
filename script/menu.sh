@@ -73,6 +73,9 @@ ask_proxy() {
     fi
     info "使用代理: ${GH_PROXY}"
   fi
+
+  # 导出给子脚本使用，避免重复询问
+  export IKUN_GH_PROXY="$GH_PROXY"
 }
 
 # 从 GitHub 克隆仓库

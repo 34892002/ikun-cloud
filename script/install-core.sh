@@ -63,27 +63,32 @@ echo "============================================================"
 echo ""
 
 # ---- GitHub 代理 ----
-echo "  GitHub 代理设置"
-echo ""
-echo "    [1] 不使用代理（直连 GitHub）"
-echo "    [2] 使用代理（默认: ${DEFAULT_GH_PROXY}）"
-echo ""
-read -p "  请选择 [1/2, 默认 1]: " -n 1 -r PROXY_CHOICE
-echo ""
-
-GH_PROXY=""
-if [[ "$PROXY_CHOICE" == "2" ]]; then
-  read -p "  代理地址 [直接回车使用默认: ${DEFAULT_GH_PROXY}]: " CUSTOM_PROXY
-  if [[ -n "$CUSTOM_PROXY" ]]; then
-    # 确保以 / 结尾
-    GH_PROXY="${CUSTOM_PROXY%/}/"
-  else
-    GH_PROXY="$DEFAULT_GH_PROXY"
-  fi
+if [[ -n "${IKUN_GH_PROXY:-}" ]]; then
+  # 由 menu.sh 传入，跳过交互
+  GH_PROXY="$IKUN_GH_PROXY"
   info "使用代理: ${GH_PROXY}"
 else
+  echo "  GitHub 代理设置"
+  echo ""
+  echo "    [1] 不使用代理（直连 GitHub）"
+  echo "    [2] 使用代理（默认: ${DEFAULT_GH_PROXY}）"
+  echo ""
+  read -p "  请选择 [1/2, 默认 1]: " -n 1 -r PROXY_CHOICE
+  echo ""
+
   GH_PROXY=""
-  info "将直连 GitHub"
+  if [[ "$PROXY_CHOICE" == "2" ]]; then
+    read -p "  代理地址 [直接回车使用默认: ${DEFAULT_GH_PROXY}]: " CUSTOM_PROXY
+    if [[ -n "$CUSTOM_PROXY" ]]; then
+      GH_PROXY="${CUSTOM_PROXY%/}/"
+    else
+      GH_PROXY="$DEFAULT_GH_PROXY"
+    fi
+    info "使用代理: ${GH_PROXY}"
+  else
+    GH_PROXY=""
+    info "将直连 GitHub"
+  fi
 fi
 
 DEB_URL="${GH_PROXY}${DEB_RELEASE_URL}"
