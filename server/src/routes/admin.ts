@@ -12,7 +12,7 @@ import { authenticate, requireRole } from '@/middleware/auth'
 import * as ikunCtl from '@/services/ikun-ctl'
 import { getServerVms, getServerVm, type ServerVmConfig } from '@/services/server-vms'
 import { listImages } from '@/services/images'
-import { flushRulesByIp } from '@/services/iptables'
+import { flushRulesByIp, ruleExists } from '@/services/iptables'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 
@@ -412,13 +412,20 @@ adminRoutes.delete('/vms/:id', async (c) => {
 })
 
 // GET /vms/:id — VM 详情
-adminRoutes.get('/vms/:id', (c) => {
+adminRoutes.get('/vms/:id', async (c) => {
   const vmId = c.req.param('id')
   const dbVm = db.select().from(vms).where(eq(vms.id, vmId)).get()
   const serverVm = getServerVm(vmId)
   if (!dbVm && !serverVm) return c.json(error('VM 不存在'), 404)
   const owner = dbVm?.ownerId ? db.select().from(users).where(eq(users.id, dbVm.ownerId)).get() : null
-  const ports = db.select().from(portForwards).where(eq(portForwards.vmId, vmId)).all()
+  const portsRaw = db.select().from(portForwards).where(eq(portForwards.vmId, vmId)).all()
+  const vmIp = serverVm?.ip ?? dbVm?.ip
+  const ports = await Promise.all(
+    portsRaw.map(async (p) => ({
+      ...p,
+      active: vmIp ? await ruleExists(p.hostPort, p.guestPort, vmIp, p.protocol) : false,
+    }))
+  )
   return c.json(success({ ...mergeVm({ ...dbVm, owner: owner ? { id: owner.id, username: owner.username } : null }, serverVm), ports }))
 })
 
