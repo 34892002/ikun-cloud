@@ -65,6 +65,21 @@ function ensureVmInDb(vmId: string) {
     apiSocket: serverVm.api_socket,
   }).run()
 
+  // 同步 SSH 端口映射
+  if (serverVm.ssh_port) {
+    const existing = db.select().from(portForwards)
+      .where(eq(portForwards.vmId, serverVm.id))
+      .get()
+    if (!existing) {
+      db.insert(portForwards).values({
+        vmId: serverVm.id,
+        hostPort: serverVm.ssh_port,
+        guestPort: 22,
+        protocol: 'tcp',
+      }).run()
+    }
+  }
+
   return db.select().from(vms).where(eq(vms.id, vmId)).get()
 }
 
@@ -381,6 +396,21 @@ userRoutes.get('/network/vms/:id/ports', async (c) => {
   if (!vmIp) return c.json(error('VM 不存在'), 404)
 
   const ports = db.select().from(portForwards).where(eq(portForwards.vmId, vmId)).all()
+
+  // 自动同步 SSH 端口映射（处理 ikun-ctl 命令行创建的 VM）
+  if (ports.length === 0) {
+    const serverVm = getServerVm(vmId)
+    if (serverVm?.ssh_port) {
+      db.insert(portForwards).values({
+        vmId,
+        hostPort: serverVm.ssh_port,
+        guestPort: 22,
+        protocol: 'tcp',
+      }).run()
+      ports.push(...db.select().from(portForwards).where(eq(portForwards.vmId, vmId)).all())
+    }
+  }
+
   const items = await Promise.all(
     ports.map(async (p) => ({
       ...p,

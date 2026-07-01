@@ -309,7 +309,11 @@ def add_port_forward(ssh_port, vm_ip):
     )
     if check.returncode == 0:
         return  # 已存在
+    # 外部访问
     run(f"iptables -t nat -A PREROUTING -p tcp --dport {ssh_port} -j DNAT --to {vm_ip}:22",
+        check=False, capture=True)
+    # 本地访问
+    run(f"iptables -t nat -A OUTPUT -p tcp --dport {ssh_port} -j DNAT --to {vm_ip}:22",
         check=False, capture=True)
     run(f"iptables -A FORWARD -p tcp -d {vm_ip} --dport 22 -j ACCEPT",
         check=False, capture=True)
@@ -318,6 +322,8 @@ def add_port_forward(ssh_port, vm_ip):
 def remove_port_forward(ssh_port, vm_ip):
     """移除端口映射"""
     run(f"iptables -t nat -D PREROUTING -p tcp --dport {ssh_port} -j DNAT --to {vm_ip}:22",
+        check=False, capture=True)
+    run(f"iptables -t nat -D OUTPUT -p tcp --dport {ssh_port} -j DNAT --to {vm_ip}:22",
         check=False, capture=True)
     run(f"iptables -D FORWARD -p tcp -d {vm_ip} --dport 22 -j ACCEPT",
         check=False, capture=True)

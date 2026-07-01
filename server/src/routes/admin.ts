@@ -557,6 +557,21 @@ adminRoutes.post('/vms/:id/assign', async (c) => {
       ownerId: body.userId,
     }).run()
 
+    // 同步 SSH 端口映射
+    if (serverVm.ssh_port) {
+      const existing = db.select().from(portForwards)
+        .where(eq(portForwards.vmId, serverVm.id))
+        .get()
+      if (!existing) {
+        db.insert(portForwards).values({
+          vmId: serverVm.id,
+          hostPort: serverVm.ssh_port,
+          guestPort: 22,
+          protocol: 'tcp',
+        }).run()
+      }
+    }
+
     dbVm = db.select().from(vms).where(eq(vms.id, vmId)).get()
     return c.json(success({ ...dbVm, owner: { id: targetUser.id, username: targetUser.username } }, `已同步并分配给 ${targetUser.username}`))
   }

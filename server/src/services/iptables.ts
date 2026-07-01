@@ -34,6 +34,16 @@ export async function flushRulesByIp(vmIp: string): Promise<number> {
     }
   }
 
+  // 清 OUTPUT DNAT
+  const { stdout: outList } = await exec(['-t', 'nat', '-S', 'OUTPUT'])
+  for (const line of outList.split('\n')) {
+    if (line.includes(vmIp)) {
+      const delArgs = line.replace(/^-A/, '-D').trim().split(/\s+/)
+      await exec(['-t', 'nat', ...delArgs])
+      count++
+    }
+  }
+
   // 清 FORWARD（放行该 IP 的所有规则）
   const { stdout: fwdList } = await exec(['-S', 'FORWARD'])
   for (const line of fwdList.split('\n')) {
@@ -63,12 +73,20 @@ export async function ruleExists(hostPort: number, guestPort: number, vmIp: stri
  * 添加单条端口转发规则
  */
 export async function addPortForward(hostPort: number, guestPort: number, vmIp: string, protocol = 'tcp'): Promise<boolean> {
+  // 外部访问
   const { exitCode } = await exec([
     '-t', 'nat', '-A', 'PREROUTING',
     '-p', protocol, '--dport', String(hostPort),
     '-j', 'DNAT', '--to-destination', `${vmIp}:${guestPort}`,
   ])
   if (exitCode !== 0) return false
+
+  // 本地访问
+  await exec([
+    '-t', 'nat', '-A', 'OUTPUT',
+    '-p', protocol, '--dport', String(hostPort),
+    '-j', 'DNAT', '--to-destination', `${vmIp}:${guestPort}`,
+  ])
 
   await exec([
     '-A', 'FORWARD',
@@ -84,6 +102,11 @@ export async function addPortForward(hostPort: number, guestPort: number, vmIp: 
 export async function removePortForward(hostPort: number, guestPort: number, vmIp: string, protocol = 'tcp'): Promise<void> {
   await exec([
     '-t', 'nat', '-D', 'PREROUTING',
+    '-p', protocol, '--dport', String(hostPort),
+    '-j', 'DNAT', '--to-destination', `${vmIp}:${guestPort}`,
+  ])
+  await exec([
+    '-t', 'nat', '-D', 'OUTPUT',
     '-p', protocol, '--dport', String(hostPort),
     '-j', 'DNAT', '--to-destination', `${vmIp}:${guestPort}`,
   ])
