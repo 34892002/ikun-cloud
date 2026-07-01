@@ -2,6 +2,40 @@
 
 > 基于 Cloud Hypervisor v52.0 + PVM 内核的轻量 VPS 管理面板，在普通云服务器上“切小鸡”给朋友使用。无需嵌套虚拟化支持，通过 PVM 内核为普通云主机提供 KVM 能力。
 
+## 一键安装
+
+在服务器上执行一条命令即可安装：
+
+```bash
+# 国内服务器（走代理）由三方提供代理服务，注意安全
+bash <(curl -Ls https://ghfast.top/https://raw.githubusercontent.com/34892002/ikun-cloud/main/script/menu.sh)
+
+# 海外服务器（直连）
+bash <(curl -Ls https://raw.githubusercontent.com/34892002/ikun-cloud/main/script/menu.sh)
+```
+
+菜单功能：
+
+```
+  当前状态:
+    PVM 内核          [已安装]
+    Cloud Hypervisor   [已安装]
+    KVM               [可用]
+    Swap              [2G]
+    ikun-cloud        [运行中]
+
+  [1] 安装 PVM 内核
+  [2] 安装 ikun-cloud
+  [3] 升级 ikun-cloud
+  ---
+  [4] 制作 Debian 基础镜像
+  [5] 调整 Swap
+
+  [0] 退出
+```
+首次使用选择 `[1] 安装 PVM 内核` 需要重启
+选择 `[2] 安装 ikun-cloud`，会自动完成环境配置、代码拉取、构建部署和启动。后续升级选择 `[3]` 即可。
+
 ## 技术栈
 
 | 层 | 技术 | 说明 |
@@ -98,12 +132,11 @@ ikun-ctl reinstall vm-xd8j4 --base-image debian12-custom
 
 ## 部署到服务器
 
-详见 `script/install-core.sh` (环境安装) 和 `script/install-ikun.sh` (项目部署)。
+推荐使用上方的一键安装脚本。如需手动部署：
 
 ```bash
 # 1. 构建
-.\win-build.bat          # Windows
-bash build.sh            # Linux / macOS
+bash build.sh
 
 # 2. 上传 dist/ 到服务器
 scp -r dist/ root@server:/tmp/dist
@@ -117,6 +150,8 @@ bash /tmp/dist/script/install-ikun.sh
 # 5. 启动服务
 cd /opt/ikun-cloud/server && nohup bun run start > /tmp/ikun-server.log 2>&1 &
 ```
+
+详见 `script/install-core.sh` (环境安装) 和 `script/install-ikun.sh` (项目部署)。
 
 ---
 
