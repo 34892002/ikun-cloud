@@ -16,7 +16,7 @@ import type { JwtPayload, UserRole } from '@/middleware/auth'
 const publicRoutes = new Hono()
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
-const CAP_SECRET = process.env.CAP_SECRET || process.env.JWT_SECRET + '-cap'
+const CAP_SECRET = process.env.CAP_SECRET || JWT_SECRET + '-cap'
 
 // ============================================================
 // POST /cap/challenge — 获取 Cap 验证挑战

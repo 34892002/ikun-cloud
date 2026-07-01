@@ -250,9 +250,10 @@ show_menu() {
   echo ""
   echo "  [1] 安装 PVM 内核"
   echo "  [2] 安装 ikun-cloud"
+  echo "  [3] 升级 ikun-cloud"
   echo "  ---"
-  echo "  [3] 制作 Debian 基础镜像"
-  echo "  [4] 调整 Swap"
+  echo "  [4] 制作 Debian 基础镜像"
+  echo "  [5] 调整 Swap"
   echo ""
   echo "  [0] 退出"
   echo ""
@@ -352,7 +353,47 @@ do_install_ikun() {
 }
 
 #============================================================
-#  选项 3: 制作 Debian 基础镜像
+#  选项 3: 升级 ikun-cloud
+#============================================================
+do_upgrade_ikun() {
+  echo ""
+  echo "============================================================"
+  echo "  升级 ikun-cloud"
+  echo "============================================================"
+
+  if [[ ! -d "/opt/ikun-cloud/server" ]]; then
+    warn "ikun-cloud 未安装，请先选择 [2] 安装"
+    return 0
+  fi
+
+  install_base_deps
+  clone_repo
+
+  # ---- 构建 ----
+  echo ""
+  info "开始构建 ikun-cloud..."
+  cd "$WORK_DIR"
+  bash build.sh
+
+  # ---- 部署 ----
+  echo ""
+  info "开始部署..."
+  bash "$WORK_DIR/dist/script/install-ikun.sh"
+
+  # ---- 重启 ----
+  echo ""
+  info "重启服务..."
+  start_service
+
+  echo ""
+  echo "============================================================"
+  echo -e "  ${GREEN}ikun-cloud 升级完成！${NC}"
+  echo "============================================================"
+  echo ""
+}
+
+#============================================================
+#  选项 4: 制作 Debian 基础镜像
 #============================================================
 do_build_image() {
   echo ""
@@ -368,7 +409,7 @@ do_build_image() {
 }
 
 #============================================================
-#  选项 4: 调整 Swap
+#  选项 5: 调整 Swap
 #============================================================
 do_adjust_swap() {
   echo ""
@@ -432,14 +473,15 @@ do_adjust_swap() {
 #============================================================
 while true; do
   show_menu
-  read -p "  请选择 [0-4]: " -n 1 -r CHOICE
+  read -p "  请选择 [0-5]: " -n 1 -r CHOICE
   echo ""
 
   case "$CHOICE" in
     1) do_install_pvm   ;;
     2) do_install_ikun  ;;
-    3) do_build_image   ;;
-    4) do_adjust_swap   ;;
+    3) do_upgrade_ikun  ;;
+    4) do_build_image   ;;
+    5) do_adjust_swap   ;;
     0) echo ""; ok "退出"; exit 0 ;;
     *) warn "无效选择"   ;;
   esac
