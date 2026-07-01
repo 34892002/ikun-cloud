@@ -36,8 +36,8 @@ if command -v python3 &>/dev/null; then
   ok "Python: $(python3 --version)"
 else
   warn "Python3 未安装，正在安装..."
-  apt-get update -qq >/dev/null 2>&1
-  apt-get install -y -qq python3 >/dev/null 2>&1
+  apt-get update -qq >/dev/null 2>&1 || fail "apt-get update 失败"
+  apt-get install -y -qq python3 >/dev/null 2>&1 || fail "安装 python3 失败"
   ok "Python: $(python3 --version)"
 fi
 
@@ -51,9 +51,9 @@ else
     ok "Bun: $(bun --version)"
   else
     warn "Bun 未安装，正在安装..."
-    apt-get update -qq >/dev/null 2>&1
-    apt-get install -y -qq unzip >/dev/null 2>&1
-    curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1
+    apt-get update -qq >/dev/null 2>&1 || fail "apt-get update 失败"
+    apt-get install -y -qq unzip >/dev/null 2>&1 || fail "安装 unzip 失败"
+    curl -fsSL https://bun.sh/install | bash 2>&1 || fail "bun 安装失败，请检查网络"
     export BUN_INSTALL="/root/.bun"
     export PATH="/root/.bun/bin:$PATH"
     grep -q '/root/.bun/bin' /root/.bashrc || echo 'export PATH=/root/.bun/bin:$PATH' >> /root/.bashrc

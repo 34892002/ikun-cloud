@@ -49,8 +49,8 @@ fi
 
 # ---- 安装基础依赖 ----
 info "安装基础依赖..."
-apt-get update -qq >/dev/null 2>&1
-apt-get install -y -qq wget curl dpkg iproute2 iputils-ping >/dev/null 2>&1
+apt-get update -qq >/dev/null 2>&1 || fail "apt-get update 失败，请检查网络"
+apt-get install -y -qq wget curl dpkg iproute2 iputils-ping >/dev/null 2>&1 || fail "安装基础依赖失败"
 ok "基础依赖就绪"
 
 # ============================================================
@@ -207,11 +207,11 @@ if $INSTALL_PVM; then
   mkdir -p /etc/default/grub.d
   echo "GRUB_DEFAULT=\"Advanced options for Debian GNU/Linux>Debian GNU/Linux, with Linux ${KVER_PVM}\"" \
     > /etc/default/grub.d/99-pvm.cfg
-  update-grub >/dev/null 2>&1
+  update-grub >/dev/null 2>&1 || warn "update-grub 失败，请手动检查"
 
   # 官方 GRUB 脚本
   info "运行官方 GRUB 配置脚本..."
-  curl -sL https://cnb.cool/CubeSandbox/CubeSandbox/-/git/raw/master/deploy/pvm/grub/host_grub_config.sh | bash >/dev/null 2>&1
+  curl -sL https://cnb.cool/CubeSandbox/CubeSandbox/-/git/raw/master/deploy/pvm/grub/host_grub_config.sh | bash >/dev/null 2>&1 || warn "GRUB 配置脚本执行失败，请手动检查"
 
   # kvm_pvm 模块
   echo 'kvm_pvm' > /etc/modules-load.d/kvm-pvm.conf
@@ -451,7 +451,7 @@ WantedBy=multi-user.target
 SVCEOF
 
   systemctl daemon-reload
-  systemctl enable ikun-net-restore.service >/dev/null 2>&1
+  systemctl enable ikun-net-restore.service >/dev/null 2>&1 || warn "启用网络恢复服务失败"
   ok "网络恢复服务已配置"
 fi
 

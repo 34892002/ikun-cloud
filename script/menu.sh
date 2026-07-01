@@ -124,7 +124,7 @@ clone_repo() {
 # 安装基础依赖
 install_base_deps() {
   info "检查基础依赖..."
-  apt-get update -qq >/dev/null 2>&1
+  apt-get update -qq >/dev/null 2>&1 || fail "apt-get update 失败，请检查网络"
 
   local NEEDED=()
   command -v git   &>/dev/null || NEEDED+=(git)
@@ -132,7 +132,7 @@ install_base_deps() {
   command -v wget  &>/dev/null || NEEDED+=(wget)
 
   if [[ ${#NEEDED[@]} -gt 0 ]]; then
-    apt-get install -y -qq "${NEEDED[@]}" >/dev/null 2>&1
+    apt-get install -y -qq "${NEEDED[@]}" >/dev/null 2>&1 || fail "安装依赖失败: ${NEEDED[*]}"
     ok "已安装: ${NEEDED[*]}"
   else
     ok "基础依赖就绪"
@@ -153,8 +153,8 @@ install_bun() {
   fi
 
   info "安装 bun..."
-  apt-get install -y -qq unzip >/dev/null 2>&1
-  curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1
+  apt-get install -y -qq unzip >/dev/null 2>&1 || fail "安装 unzip 失败"
+  curl -fsSL https://bun.sh/install | bash 2>&1 || fail "bun 安装失败，请检查网络连接"
   export PATH="/root/.bun/bin:$PATH"
   grep -q '/root/.bun/bin' /root/.bashrc 2>/dev/null || echo 'export PATH=/root/.bun/bin:$PATH' >> /root/.bashrc
   ok "bun: $(bun --version)"
