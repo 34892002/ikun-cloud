@@ -418,7 +418,8 @@ adminRoutes.get('/vms/:id', (c) => {
   const serverVm = getServerVm(vmId)
   if (!dbVm && !serverVm) return c.json(error('VM 不存在'), 404)
   const owner = dbVm?.ownerId ? db.select().from(users).where(eq(users.id, dbVm.ownerId)).get() : null
-  return c.json(success(mergeVm({ ...dbVm, owner: owner ? { id: owner.id, username: owner.username } : null }, serverVm)))
+  const ports = db.select().from(portForwards).where(eq(portForwards.vmId, vmId)).all()
+  return c.json(success({ ...mergeVm({ ...dbVm, owner: owner ? { id: owner.id, username: owner.username } : null }, serverVm), ports }))
 })
 
 // POST /vms/:id/start — 启动 VM
