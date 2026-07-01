@@ -202,11 +202,15 @@ if $INSTALL_PVM; then
     ok "PVM 内核 deb 已安装，等待重启生效"
   fi
 
-  # GRUB 配置
+  # GRUB 配置（自动检测 Debian/Ubuntu）
   info "配置 GRUB 默认启动 PVM 内核..."
   mkdir -p /etc/default/grub.d
-  echo "GRUB_DEFAULT=\"Advanced options for Debian GNU/Linux>Debian GNU/Linux, with Linux ${KVER_PVM}\"" \
-    > /etc/default/grub.d/99-pvm.cfg
+  if grep -qi 'ubuntu' /etc/os-release 2>/dev/null; then
+    GRUB_MENU="Advanced options for Ubuntu>Ubuntu, with Linux ${KVER_PVM}"
+  else
+    GRUB_MENU="Advanced options for Debian GNU/Linux>Debian GNU/Linux, with Linux ${KVER_PVM}"
+  fi
+  echo "GRUB_DEFAULT=\"${GRUB_MENU}\"" > /etc/default/grub.d/99-pvm.cfg
   update-grub >/dev/null 2>&1 || warn "update-grub 失败，请手动检查"
 
   # 官方 GRUB 脚本
