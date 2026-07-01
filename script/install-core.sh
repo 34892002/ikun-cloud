@@ -213,6 +213,13 @@ if $INSTALL_PVM; then
   info "运行官方 GRUB 配置脚本..."
   curl -sL https://cnb.cool/CubeSandbox/CubeSandbox/-/git/raw/master/deploy/pvm/grub/host_grub_config.sh | bash >/dev/null 2>&1 || warn "GRUB 配置脚本执行失败，请手动检查"
 
+  # 下载 PVM guest 内核（用于 Cloud Hypervisor 启动虚拟机）
+  info "下载 PVM guest 内核..."
+  mkdir -p /data/ikun-cloud/kernel
+  PVM_GUEST_KERNEL_URL="https://github.com/TencentCloud/CubeSandbox/releases/download/v0.4.0/vmlinux-pvm"
+  wget -q "${GH_PROXY}${PVM_GUEST_KERNEL_URL}" -O /data/ikun-cloud/kernel/vmlinux-pvm || fail "PVM guest 内核下载失败"
+  ok "PVM guest 内核已下载"
+
   # kvm_pvm 模块
   echo 'kvm_pvm' > /etc/modules-load.d/kvm-pvm.conf
   ok "PVM 内核 + GRUB 配置完成"
