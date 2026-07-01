@@ -53,8 +53,19 @@ else
     warn "Bun 未安装，正在安装..."
     apt-get update -qq >/dev/null 2>&1 || fail "apt-get update 失败"
     apt-get install -y -qq unzip >/dev/null 2>&1 || fail "安装 unzip 失败"
-    curl -fsSL https://bun.sh/install | bash 2>&1 || fail "bun 安装失败，请检查网络"
-    export BUN_INSTALL="/root/.bun"
+
+    # 直接从 GitHub 下载 bun，支持代理
+    PROXY="${IKUN_GH_PROXY:-}"
+    BUN_URL="${PROXY}https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip"
+    TMP_DIR=$(mktemp -d)
+    info "下载 bun..."
+    wget -q "$BUN_URL" -O "$TMP_DIR/bun.zip" || fail "bun 下载失败，请检查网络"
+    unzip -qo "$TMP_DIR/bun.zip" -d "$TMP_DIR" || fail "bun 解压失败"
+    mkdir -p /root/.bun/bin
+    mv "$TMP_DIR/bun-linux-x64/bun" /root/.bun/bin/bun
+    chmod +x /root/.bun/bin/bun
+    rm -rf "$TMP_DIR"
+
     export PATH="/root/.bun/bin:$PATH"
     grep -q '/root/.bun/bin' /root/.bashrc || echo 'export PATH=/root/.bun/bin:$PATH' >> /root/.bashrc
     ok "Bun: $(bun --version)"

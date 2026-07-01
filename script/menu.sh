@@ -152,9 +152,26 @@ install_bun() {
     return 0
   fi
 
+  ask_proxy
+
   info "安装 bun..."
   apt-get install -y -qq unzip >/dev/null 2>&1 || fail "安装 unzip 失败"
-  curl -fsSL https://bun.sh/install | bash 2>&1 || fail "bun 安装失败，请检查网络连接"
+
+  # 直接从 GitHub 下载 bun，复用代理
+  local BUN_URL="https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip"
+  local DOWNLOAD_URL="${GH_PROXY}${BUN_URL}"
+  local TMP_DIR=$(mktemp -d)
+
+  info "下载 bun..."
+  wget -q "$DOWNLOAD_URL" -O "$TMP_DIR/bun.zip" || fail "bun 下载失败，请检查网络或代理"
+
+  info "解压安装..."
+  unzip -qo "$TMP_DIR/bun.zip" -d "$TMP_DIR" || fail "bun 解压失败"
+  mkdir -p /root/.bun/bin
+  mv "$TMP_DIR/bun-linux-x64/bun" /root/.bun/bin/bun
+  chmod +x /root/.bun/bin/bun
+  rm -rf "$TMP_DIR"
+
   export PATH="/root/.bun/bin:$PATH"
   grep -q '/root/.bun/bin' /root/.bashrc 2>/dev/null || echo 'export PATH=/root/.bun/bin:$PATH' >> /root/.bashrc
   ok "bun: $(bun --version)"
@@ -194,6 +211,18 @@ start_service() {
 #============================================================
 #  显示菜单
 #============================================================
+
+# 检查 ikun-cloud 服务状态
+check_ikun() {
+  if pgrep -f "bun.*run.*start" >/dev/null 2>&1; then
+    echo "[运行中]"
+  elif [[ -d "/opt/ikun-cloud/server" ]]; then
+    echo "[已停止]"
+  else
+    echo "[未安装]"
+  fi
+}
+
 show_menu() {
   echo ""
   echo -e "${BOLD}============================================================${NC}"
@@ -202,19 +231,26 @@ show_menu() {
   echo ""
   echo "  当前状态:"
 
-  local PVM_STATUS="[未安装]" CH_STATUS="[未安装]" SWAP_STATUS="[未启用]" KVM_STATUS="[不可用]"
-  check_pvm  && PVM_STATUS="[已安装]"
-  check_ch   && CH_STATUS="[已安装]"
-  check_swap && SWAP_STATUS="[已启用]"
-  check_kvm  && KVM_STATUS="[可用]"
+  local PVM_STATUS="[未安装]" CH_STATUS="[未安装]" KVM_STATUS="[不可用]"
+  check_pvm && PVM_STATUS="[已安装]"
+  check_ch  && CH_STATUS="[已安装]"
+  check_kvm && KVM_STATUS="[可用]"
 
-  echo "    PVM 内核         $PVM_STATUS"
-  echo "    Cloud Hypervisor  $CH_STATUS"
-  echo "    Swap             $SWAP_STATUS"
-  echo "    KVM              $KVM_STATUS"
+  # Swap 显示具体大小
+  local SWAP_STATUS="[未启用]"
+  if check_swap; then
+    SWAP_STATUS="[$(swapon --show --noheadings | grep swapfile | awk '{print $3}')]"
+  fi
+
+  echo "    PVM 内核          $PVM_STATUS"
+  echo "    Cloud Hypervisor   $CH_STATUS"
+  echo "    KVM               $KVM_STATUS"
+  echo "    Swap              $SWAP_STATUS"
+  echo "    ikun-cloud        $(check_ikun)"
   echo ""
   echo "  [1] 安装 PVM 内核"
   echo "  [2] 安装 ikun-cloud"
+  echo "  ---"
   echo "  [3] 制作 Debian 基础镜像"
   echo "  [4] 调整 Swap"
   echo ""
