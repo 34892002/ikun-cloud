@@ -367,6 +367,7 @@ do_upgrade_ikun() {
   fi
 
   install_base_deps
+  install_bun
   clone_repo
 
   # ---- 构建 ----
